@@ -1,0 +1,14 @@
+{
+  "name": "mcp-arena",
+  "version": "1.0.0",
+  "description": "AI Agent Evaluation Sandbox - Watch agents navigate digital and physical worlds through the Model Context Protocol",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "python3 -m http.server 3000",
+    "start": "python3 -m http.server 3000"
+  },
+  "keywords": ["mcp", "ai-agents", "evaluation", "robotics", "simulation"],
+  "author": "rzx",
+  "license": "MIT"
+}
