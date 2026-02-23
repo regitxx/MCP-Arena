@@ -30,6 +30,15 @@ class MCPArena {
     this.brainFacts = [];
     this.brainPolicyChecks = [];
 
+    // Voice state
+    this.voiceEnabled = true;         // Auto-speak responses
+    this.voiceListening = false;      // Currently recording
+    this.voiceSpeaking = false;       // Currently speaking
+    this.recognition = null;          // SpeechRecognition instance
+    this.synthesis = window.speechSynthesis || null;
+    this.jarvisVoice = null;          // Cached JARVIS voice
+    this.voiceLang = 'en-US';        // Current recognition language
+
     this.init();
   }
 
@@ -530,9 +539,28 @@ class MCPArena {
 
         <div class="brain-chat">
           <div class="chat-messages" id="chat-messages"></div>
+          <div class="voice-indicator" id="voice-indicator">
+            <div class="voice-wave" id="voice-wave" style="display:none;">
+              <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+            </div>
+            <div class="voice-status" id="voice-status"></div>
+          </div>
           <div class="chat-input-bar">
-            <input type="text" class="chat-input" id="chat-input" placeholder="Type a message... (Cantonese, Mandarin, or English)" autocomplete="off">
+            <button class="voice-btn" id="voice-mic" title="Click to speak (or hold Space)">🎤</button>
+            <input type="text" class="chat-input" id="chat-input" placeholder="Type or press 🎤 to speak... (Cantonese, Mandarin, or English)" autocomplete="off">
             <button class="chat-send" id="chat-send">Send</button>
+          </div>
+          <div class="voice-settings">
+            <label class="voice-toggle">
+              <input type="checkbox" id="voice-auto-speak" checked>
+              <span>Auto-speak</span>
+            </label>
+            <span class="jarvis-badge">JARVIS</span>
+            <select id="voice-lang" title="Recognition language">
+              <option value="en-US">English</option>
+              <option value="yue-Hant-HK">Cantonese</option>
+              <option value="zh-CN">Mandarin</option>
+            </select>
           </div>
         </div>
 
@@ -582,6 +610,31 @@ class MCPArena {
     document.getElementById('chat-input').addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.sendBrainMessage(); }
     });
+
+    // Voice bindings
+    document.getElementById('voice-mic').addEventListener('click', () => this.toggleVoiceInput());
+    document.getElementById('voice-auto-speak')?.addEventListener('change', (e) => {
+      this.voiceEnabled = e.target.checked;
+    });
+    document.getElementById('voice-lang')?.addEventListener('change', (e) => {
+      this.voiceLang = e.target.value;
+      if (this.recognition) this.recognition.lang = this.voiceLang;
+    });
+
+    // Space bar to toggle mic (when input not focused)
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' && document.activeElement?.id !== 'chat-input' && this.currentView === 'brain') {
+        e.preventDefault();
+        this.toggleVoiceInput();
+      }
+    });
+
+    // Pre-load voices (some browsers load async)
+    if (this.synthesis) {
+      this.synthesis.onvoiceschanged = () => this._findJarvisVoice();
+      this._findJarvisVoice();
+    }
+
     document.getElementById('chat-input').focus();
   }
 
@@ -616,6 +669,9 @@ class MCPArena {
       // Add bot response
       const meta = `${result.modelUsed || 'demo'} · ${result.latencyMs}ms · Turn ${result.turnNumber}`;
       this.addBrainMessage('bot', result.response, meta);
+
+      // JARVIS speaks the response
+      this.speakJarvis(result.response);
 
       // Update emotion display
       if (result.emotionState) {
@@ -764,6 +820,233 @@ class MCPArena {
       }
     } catch (e) {
       // Ignore
+    }
+  }
+
+  // ============ VOICE SYSTEM ============
+
+  /**
+   * Initialize Web Speech API for voice input (free, built-in browser API)
+   * Works in Chrome, Edge, Safari — no API key needed
+   */
+  _initVoiceRecognition() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      console.warn('[Voice] SpeechRecognition not supported in this browser');
+      return false;
+    }
+
+    this.recognition = new SpeechRecognition();
+    this.recognition.continuous = false;       // Stop after one utterance
+    this.recognition.interimResults = true;     // Show partial results
+    this.recognition.maxAlternatives = 1;
+    this.recognition.lang = this.voiceLang;
+
+    this.recognition.onstart = () => {
+      this.voiceListening = true;
+      this._updateVoiceUI();
+    };
+
+    this.recognition.onresult = (event) => {
+      let transcript = '';
+      let isFinal = false;
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+        if (event.results[i].isFinal) isFinal = true;
+      }
+
+      // Show interim results in input field
+      const input = document.getElementById('chat-input');
+      if (input) input.value = transcript;
+
+      // On final result, send the message
+      if (isFinal && transcript.trim()) {
+        this.voiceListening = false;
+        this._updateVoiceUI();
+        setTimeout(() => this.sendBrainMessage(), 100);
+      }
+    };
+
+    this.recognition.onerror = (event) => {
+      console.warn('[Voice] Recognition error:', event.error);
+      this.voiceListening = false;
+      this._updateVoiceUI();
+      if (event.error === 'not-allowed') {
+        this._setVoiceStatus('Microphone access denied. Check browser permissions.', 'error');
+      }
+    };
+
+    this.recognition.onend = () => {
+      this.voiceListening = false;
+      this._updateVoiceUI();
+    };
+
+    return true;
+  }
+
+  /**
+   * Toggle voice recording on/off
+   */
+  toggleVoiceInput() {
+    if (this.voiceListening) {
+      this.recognition?.stop();
+      this.voiceListening = false;
+      this._updateVoiceUI();
+      return;
+    }
+
+    if (!this.recognition) {
+      if (!this._initVoiceRecognition()) {
+        this._setVoiceStatus('Voice input not supported in this browser. Use Chrome.', 'error');
+        return;
+      }
+    }
+
+    // Update language based on selector
+    const langSelect = document.getElementById('voice-lang');
+    if (langSelect) {
+      this.voiceLang = langSelect.value;
+      this.recognition.lang = this.voiceLang;
+    }
+
+    // Stop any current TTS before listening
+    if (this.synthesis) this.synthesis.cancel();
+
+    try {
+      this.recognition.start();
+      this._setVoiceStatus('Listening...', 'active');
+    } catch (e) {
+      console.warn('[Voice] Start error:', e);
+      this._setVoiceStatus('Mic busy — try again', 'error');
+    }
+  }
+
+  /**
+   * JARVIS voice: Speak text using Web Speech API (100% free)
+   * Configured for a deep, smooth, British male voice
+   */
+  speakJarvis(text) {
+    if (!this.synthesis || !this.voiceEnabled) return;
+
+    // Cancel any current speech
+    this.synthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+
+    // Find the best JARVIS-like voice (deep, male, English)
+    if (!this.jarvisVoice) {
+      this._findJarvisVoice();
+    }
+    if (this.jarvisVoice) {
+      utterance.voice = this.jarvisVoice;
+    }
+
+    // JARVIS-style voice settings: calm, measured, slightly lower pitch
+    utterance.pitch = 0.85;     // Lower pitch for JARVIS gravitas
+    utterance.rate = 0.95;      // Slightly slower — deliberate, confident
+    utterance.volume = 1.0;
+
+    // Detect if text is Chinese — adjust for better pronunciation
+    const isChinese = /[\u4e00-\u9fff\u3400-\u4dbf]/.test(text);
+    if (isChinese) {
+      utterance.lang = 'zh-HK';
+      utterance.pitch = 1.0;    // Normal pitch for Chinese
+      utterance.rate = 0.9;     // Slightly slower for clarity
+      // Try to find a Chinese voice
+      const cnVoice = this._findChineseVoice();
+      if (cnVoice) utterance.voice = cnVoice;
+    } else {
+      utterance.lang = 'en-GB'; // British English for JARVIS
+    }
+
+    utterance.onstart = () => {
+      this.voiceSpeaking = true;
+      this._updateVoiceUI();
+      this._setVoiceStatus('JARVIS speaking...', 'speaking');
+    };
+
+    utterance.onend = () => {
+      this.voiceSpeaking = false;
+      this._updateVoiceUI();
+      this._setVoiceStatus('', '');
+    };
+
+    utterance.onerror = () => {
+      this.voiceSpeaking = false;
+      this._updateVoiceUI();
+    };
+
+    this.synthesis.speak(utterance);
+  }
+
+  /**
+   * Find the best JARVIS-like voice from available system voices
+   * Priority: British male > any male English > any English
+   */
+  _findJarvisVoice() {
+    const voices = this.synthesis?.getVoices() || [];
+    if (voices.length === 0) return;
+
+    // Priority list for JARVIS voice
+    const priorities = [
+      // British male voices (ideal JARVIS)
+      v => v.lang.startsWith('en-GB') && v.name.toLowerCase().includes('male'),
+      v => v.lang.startsWith('en-GB') && v.name.toLowerCase().includes('daniel'),
+      v => v.lang.startsWith('en-GB') && v.name.toLowerCase().includes('james'),
+      v => v.lang.startsWith('en-GB') && v.name.toLowerCase().includes('oliver'),
+      v => v.lang.startsWith('en-GB') && /\b(arthur|george|harry|thomas)\b/i.test(v.name),
+      v => v.lang.startsWith('en-GB'),
+      // US male as fallback
+      v => v.lang.startsWith('en') && v.name.toLowerCase().includes('male'),
+      v => v.lang.startsWith('en') && v.name.toLowerCase().includes('david'),
+      v => v.lang.startsWith('en') && v.name.toLowerCase().includes('alex'),
+      // Any English voice
+      v => v.lang.startsWith('en'),
+    ];
+
+    for (const check of priorities) {
+      const found = voices.find(check);
+      if (found) {
+        this.jarvisVoice = found;
+        console.log(`[JARVIS] Voice selected: ${found.name} (${found.lang})`);
+        return;
+      }
+    }
+  }
+
+  _findChineseVoice() {
+    const voices = this.synthesis?.getVoices() || [];
+    return voices.find(v => v.lang === 'zh-HK') ||
+           voices.find(v => v.lang.startsWith('zh')) ||
+           null;
+  }
+
+  /**
+   * Update voice UI elements (mic button state, wave animation)
+   */
+  _updateVoiceUI() {
+    const micBtn = document.getElementById('voice-mic');
+    const wave = document.getElementById('voice-wave');
+
+    if (micBtn) {
+      micBtn.className = 'voice-btn' +
+        (this.voiceListening ? ' listening' : '') +
+        (this.voiceSpeaking ? ' speaking' : '');
+      micBtn.innerHTML = this.voiceListening ? '⏹' : (this.voiceSpeaking ? '🔊' : '🎤');
+      micBtn.title = this.voiceListening ? 'Stop listening' : 'Click to speak (or hold Space)';
+    }
+
+    if (wave) {
+      wave.style.display = (this.voiceListening || this.voiceSpeaking) ? 'flex' : 'none';
+      wave.className = 'voice-wave' + (this.voiceListening ? ' listening' : '');
+    }
+  }
+
+  _setVoiceStatus(text, type) {
+    const el = document.getElementById('voice-status');
+    if (el) {
+      el.textContent = text;
+      el.className = 'voice-status' + (type ? ` ${type}` : '');
     }
   }
 

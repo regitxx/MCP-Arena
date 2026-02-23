@@ -21,6 +21,13 @@ export const API_CONFIG = {
   GOOGLE_SPEECH_KEY: '',    // Google Chirp 2
   ELEVENLABS_KEY: '',       // ElevenLabs TTS
 
+  // === Free / Open-Source LLM Keys ===
+  // These services offer FREE tiers — perfect for testing without paid keys
+
+  GROQ_API_KEY: '',         // Groq — blazing fast, free tier — https://console.groq.com
+  OPENROUTER_API_KEY: '',   // OpenRouter — free models available — https://openrouter.ai
+  TOGETHER_API_KEY: '',     // Together AI — free tier — https://api.together.xyz
+
   // === Feature Flags ===
   USE_REAL_MODELS: false,   // Set to true when API keys are configured
   USE_REAL_SPEECH: false,   // Set to true when speech API keys are configured
@@ -89,11 +96,52 @@ export const MODEL_ENDPOINTS = {
   },
 };
 
+// === Free / Open-Source Model Endpoints ===
+// These work with free-tier API keys
+
+export const FREE_MODEL_ENDPOINTS = {
+  'groq-llama-70b': {
+    url: 'https://api.groq.com/openai/v1/chat/completions',
+    model: 'llama-3.3-70b-versatile',
+    headers: (key) => ({
+      'Authorization': `Bearer ${key}`,
+      'content-type': 'application/json',
+    }),
+  },
+  'groq-mixtral': {
+    url: 'https://api.groq.com/openai/v1/chat/completions',
+    model: 'mixtral-8x7b-32768',
+    headers: (key) => ({
+      'Authorization': `Bearer ${key}`,
+      'content-type': 'application/json',
+    }),
+  },
+  'openrouter-free': {
+    url: 'https://openrouter.ai/api/v1/chat/completions',
+    model: 'meta-llama/llama-3.3-70b-instruct:free',
+    headers: (key) => ({
+      'Authorization': `Bearer ${key}`,
+      'content-type': 'application/json',
+      'HTTP-Referer': 'https://mcp-arena.vercel.app',
+    }),
+  },
+  'together-llama-70b': {
+    url: 'https://api.together.xyz/v1/chat/completions',
+    model: 'meta-llama/Llama-3.3-70B-Instruct-Turbo',
+    headers: (key) => ({
+      'Authorization': `Bearer ${key}`,
+      'content-type': 'application/json',
+    }),
+  },
+};
+
 // Check if any real model keys are configured
 export function hasApiKeys() {
   return !!(API_CONFIG.ANTHROPIC_API_KEY || API_CONFIG.OPENAI_API_KEY ||
             API_CONFIG.GOOGLE_API_KEY || API_CONFIG.MINIMAX_API_KEY ||
-            API_CONFIG.DEEPSEEK_API_KEY || API_CONFIG.QWEN_API_KEY);
+            API_CONFIG.DEEPSEEK_API_KEY || API_CONFIG.QWEN_API_KEY ||
+            API_CONFIG.GROQ_API_KEY || API_CONFIG.OPENROUTER_API_KEY ||
+            API_CONFIG.TOGETHER_API_KEY);
 }
 
 // Get the API key for a specific model
@@ -106,6 +154,11 @@ export function getApiKey(modelId) {
     'minimax-m25': API_CONFIG.MINIMAX_API_KEY,
     'deepseek-r1': API_CONFIG.DEEPSEEK_API_KEY,
     'qwen-2.5': API_CONFIG.QWEN_API_KEY,
+    // Free tier models
+    'groq-llama-70b': API_CONFIG.GROQ_API_KEY,
+    'groq-mixtral': API_CONFIG.GROQ_API_KEY,
+    'openrouter-free': API_CONFIG.OPENROUTER_API_KEY,
+    'together-llama-70b': API_CONFIG.TOGETHER_API_KEY,
   };
   return keyMap[modelId] || '';
 }

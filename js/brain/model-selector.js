@@ -24,6 +24,11 @@ const COST_TIERS = {
   'deepseek-r1':     { tier: 'budget', costPer1k: 0.005 },
   'qwen-2.5':        { tier: 'budget', costPer1k: 0.004 },
   'minimax-m25':     { tier: 'budget', costPer1k: 0.003 },
+  // Free tier models
+  'groq-llama-70b':      { tier: 'free', costPer1k: 0.000 },
+  'groq-mixtral':        { tier: 'free', costPer1k: 0.000 },
+  'openrouter-free':     { tier: 'free', costPer1k: 0.000 },
+  'together-llama-70b':  { tier: 'free', costPer1k: 0.000 },
 };
 
 export class ModelSelector {

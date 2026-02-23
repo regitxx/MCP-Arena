@@ -2,7 +2,7 @@
 // Fetch wrapper for all supported LLM APIs: Anthropic, OpenAI, Google, MiniMax, DeepSeek, Qwen
 // Demo mode returns scripted responses when no API keys are configured
 
-import { API_CONFIG, MODEL_ENDPOINTS, getApiKey } from '../api-config.js';
+import { API_CONFIG, MODEL_ENDPOINTS, FREE_MODEL_ENDPOINTS, getApiKey } from '../api-config.js';
 
 export class LLMClient {
   constructor() {
@@ -20,10 +20,11 @@ export class LLMClient {
   async call(modelId, systemPrompt, messages, options = {}) {
     const startTime = Date.now();
     const apiKey = getApiKey(modelId);
-    const endpoint = MODEL_ENDPOINTS[modelId];
+    const endpoint = MODEL_ENDPOINTS[modelId] || FREE_MODEL_ENDPOINTS[modelId];
 
-    // Demo mode: no API key or USE_REAL_MODELS is false
-    if (!apiKey || !API_CONFIG.USE_REAL_MODELS || !endpoint) {
+    // Demo mode: no API key or USE_REAL_MODELS is false (free models bypass USE_REAL_MODELS)
+    const isFreeModel = !!FREE_MODEL_ENDPOINTS[modelId];
+    if (!apiKey || (!API_CONFIG.USE_REAL_MODELS && !isFreeModel) || !endpoint) {
       const demoResponse = this._getDemoResponse(modelId, messages, systemPrompt);
       const latencyMs = Math.floor(Math.random() * 800 + 400);
       this._log(modelId, 'demo', latencyMs, demoResponse.length);
