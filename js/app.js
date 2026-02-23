@@ -1,15 +1,12 @@
-// MCP Arena - Main Application
+// MCP Arena - Social Robotics Brain Evaluation Dashboard
 
-import { COLORS, TOOL_ICONS, MODEL_CONFIGS, LANGUAGES } from './types.js';
-import { Renderer } from './simulation/renderer.js';
-import { Evaluator } from './engine/evaluator.js';
+import { COLORS, TOOL_ICONS, MODEL_CONFIGS, EMOTIONS } from './types.js';
+import { Evaluator, TASKS } from './engine/evaluator.js';
 
 class MCPArena {
   constructor() {
-    this.currentView = 'landing'; // landing | arena | leaderboard
+    this.currentView = 'landing';
     this.evaluator = null;
-    this.renderer = null;
-    this.animationId = null;
     this.activityLog = [];
     this.currentThinking = '';
     this.metrics = { completion: 0, time: '0.0', toolCalls: 0, safety: 0, score: null };
@@ -18,22 +15,17 @@ class MCPArena {
     this.speed = 1;
     this.submission = null;
     this.leaderboardData = [];
+    this.emotionData = {};
+    this.dimensionScores = {};
 
     this.init();
   }
 
   init() {
     this.renderLanding();
-    this.setupKeyboardShortcuts();
-  }
-
-  setupKeyboardShortcuts() {
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') this.showLanding();
-      if (e.key === ' ' && this.evaluator?.running) {
-        e.preventDefault();
-        this.evaluator.abort();
-      }
+      if (e.key === ' ' && this.evaluator?.running) { e.preventDefault(); this.evaluator.abort(); }
     });
   }
 
@@ -48,447 +40,442 @@ class MCPArena {
     app.innerHTML = `
       <div class="landing">
         <header class="landing-header">
-          <div class="logo-section">
-            <div class="logo-icon">\u{1F3DF}\uFE0F</div>
-            <h1>MCP Arena</h1>
-            <p class="subtitle">AI Agent Evaluation Sandbox</p>
-          </div>
-          <p class="tagline">
-            Evaluate AI agents across digital, physical, and <span class="highlight">multilingual</span> worlds
-            through the <span class="highlight">Model Context Protocol</span>.
-            Built for social robotics in Hong Kong \u{1F1ED}\u{1F1F0} and beyond.
-          </p>
+          <h1><span class="gradient">MCP Arena</span></h1>
+          <p class="subtitle">Social Robotics Brain Evaluation Platform — Evaluate AI brains for elderly care through emotion intelligence, companion quality, cognitive reasoning, speech, and multilingual capabilities.</p>
+          <span class="demo-badge">DEMO MODE — Scripted evaluation sequences. Provide API keys for real model evaluation.</span>
         </header>
 
-        <section class="architecture-banner">
-          <div class="arch-flow">
-            <div class="arch-node">
-              <span class="arch-emoji">\u{1F9E0}</span>
-              <span>AI Agent</span>
-            </div>
-            <div class="arch-arrow">\u2192 MCP \u2192</div>
-            <div class="arch-node">
-              <span class="arch-emoji">\u{1F916}</span>
-              <span>sim-robot</span>
-            </div>
-            <div class="arch-plus">+</div>
-            <div class="arch-node">
-              <span class="arch-emoji">\u{1F310}</span>
-              <span>web-intel</span>
-            </div>
-            <div class="arch-plus">+</div>
-            <div class="arch-node">
-              <span class="arch-emoji">\u{1F4CA}</span>
-              <span>arena-eval</span>
-            </div>
-            <div class="arch-plus">+</div>
-            <div class="arch-node">
-              <span class="arch-emoji">\u{1F1ED}\u{1F1F0}</span>
-              <span>language-eval</span>
+        <div class="mcp-banner">
+          <div class="icon">🔗</div>
+          <div>
+            <h3>Powered by Model Context Protocol (MCP)</h3>
+            <p>Each evaluation dimension runs as a separate MCP server — the same interface an AI agent uses to control a physical robot is used here to evaluate its brain. One protocol bridges digital intelligence and physical robotics.</p>
+            <div class="mcp-servers">
+              <span class="mcp-server-tag">🧠 emotion-intel</span>
+              <span class="mcp-server-tag">💚 companion-eval</span>
+              <span class="mcp-server-tag">🧩 cognitive-eval</span>
+              <span class="mcp-server-tag">🎙️ speech-eval</span>
+              <span class="mcp-server-tag">🗣️ language-eval</span>
+              <span class="mcp-server-tag">✅ arena-eval</span>
             </div>
           </div>
-        </section>
+        </div>
 
-        <section class="tasks-section">
-          <h2>Choose a Scenario</h2>
-          <div class="task-grid">
-            ${tasks.map(t => `
-              <div class="task-card" data-task="${t.id}">
-                <div class="task-card-icon">${t.icon}</div>
-                <h3>${t.name}</h3>
-                <p>${t.description}</p>
-                <div class="task-meta">
-                  <span class="badge badge-${t.difficulty.toLowerCase()}">${t.difficulty}</span>
-                  <span class="badge badge-time">${t.timeLimit}s limit</span>
-                  <span class="badge badge-obj">${t.objectives.length} objectives</span>
-                </div>
-                <button class="run-btn" data-task="${t.id}">Run Scenario \u2192</button>
-              </div>
-            `).join('')}
+        <div class="controls-bar">
+          <div>
+            <label>Model</label><br>
+            <select id="model-select">
+              ${Object.entries(MODEL_CONFIGS).map(([id, m]) =>
+                `<option value="${id}" ${id === this.selectedModel ? 'selected' : ''}>${m.name} (${m.provider})</option>`
+              ).join('')}
+            </select>
           </div>
-        </section>
+          <div>
+            <label>Speed</label><br>
+            <select id="speed-select">
+              <option value="0.5">0.5x (Slow)</option>
+              <option value="1" selected>1x (Normal)</option>
+              <option value="2">2x (Fast)</option>
+              <option value="4">4x (Very Fast)</option>
+            </select>
+          </div>
+          <div style="flex:1"></div>
+          <div style="text-align: right; font-size: 0.8rem; color: var(--text-dim);">
+            <strong style="color: var(--cyan);">6</strong> MCP Servers &bull;
+            <strong style="color: var(--pink);">${Object.values(TASKS).reduce((sum, t) => sum + t.objectives.length, 0)}</strong> Objectives &bull;
+            <strong style="color: var(--warning);">${Object.keys(MODEL_CONFIGS).length}</strong> Models
+          </div>
+        </div>
+
+        <div class="tasks-grid">
+          ${tasks.map(task => `
+            <div class="task-card" data-task="${task.id}">
+              <div class="card-top">
+                <span class="card-icon">${task.icon}</span>
+                <span class="card-title">${task.name}</span>
+              </div>
+              <div class="card-desc">${task.description}</div>
+              <div class="card-meta">
+                <span class="meta-tag difficulty-${task.difficulty}">${task.difficulty}</span>
+                <span class="meta-tag category">${task.category}</span>
+                <span class="meta-tag" style="background:rgba(34,211,238,0.1);color:var(--cyan);">${task.servers?.length || 2} MCP servers</span>
+              </div>
+            </div>
+          `).join('')}
+        </div>
 
         ${lb.length > 0 ? `
-          <section class="mini-leaderboard">
-            <h2>Leaderboard</h2>
-            <table class="lb-table">
-              <thead><tr><th>#</th><th>Model</th><th>Task</th><th>Score</th><th>Time</th></tr></thead>
-              <tbody>
-                ${lb.slice(0, 5).map((e, i) => `
-                  <tr>
-                    <td>${i === 0 ? '\u{1F947}' : i === 1 ? '\u{1F948}' : i === 2 ? '\u{1F949}' : i + 1}</td>
-                    <td><span class="model-dot" style="background:${MODEL_CONFIGS[e.model]?.color || '#666'}"></span>${MODEL_CONFIGS[e.model]?.name || e.model}</td>
-                    <td>${e.taskName}</td>
-                    <td class="score-cell">${e.score}/100</td>
-                    <td>${e.time}s</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </section>
+          <h2 style="font-size: 1.1rem; color: var(--text-bright); margin: 2rem 0 0.75rem;">Leaderboard</h2>
+          <table class="lb-table">
+            <thead><tr><th>#</th><th>Model</th><th>Task</th><th>Score</th><th>Grade</th><th>Time</th><th>Calls</th></tr></thead>
+            <tbody>
+              ${lb.map((e, i) => `
+                <tr>
+                  <td class="lb-rank">${i + 1}</td>
+                  <td style="color:${MODEL_CONFIGS[e.model]?.color || '#fff'}">${MODEL_CONFIGS[e.model]?.name || e.model}</td>
+                  <td>${e.taskName}</td>
+                  <td style="font-family:var(--font-mono);font-weight:700">${e.score}/100</td>
+                  <td><strong class="grade-${e.grade}">${e.grade}</strong></td>
+                  <td style="font-family:var(--font-mono)">${e.time}s</td>
+                  <td style="font-family:var(--font-mono)">${e.toolCalls}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
         ` : ''}
 
-        <footer class="landing-footer">
-          <p>Built with <span class="highlight">Model Context Protocol</span> \u00B7 Social Robotics Evaluation for Hong Kong \u{1F1ED}\u{1F1F0}</p>
-          <p class="footer-sub">\u5EE3\u6771\u8A71 \u00B7 \u666E\u901A\u8BDD \u00B7 English \u00B7 \u65E5\u672C\u8A9E \u00B7 \uD55C\uAD6D\uC5B4 \u2014 One protocol, every language</p>
-        </footer>
-      </div>
-    `;
-
-    // Bind events
-    app.querySelectorAll('.run-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const taskId = e.target.dataset.task;
-        this.startArena(taskId);
-      });
-    });
-
-    app.querySelectorAll('.task-card').forEach(card => {
-      card.addEventListener('click', (e) => {
-        if (e.target.classList.contains('run-btn')) return;
-        const taskId = card.dataset.task;
-        card.classList.toggle('selected');
-      });
-    });
-  }
-
-  // ============ ARENA VIEW ============
-
-  startArena(taskId) {
-    this.currentView = 'arena';
-    this.selectedTask = taskId;
-    this.activityLog = [];
-    this.currentThinking = '';
-    this.metrics = { completion: 0, time: '0.0', toolCalls: 0, safety: 0, score: null };
-    this.submission = null;
-
-    const task = Evaluator.getTasks().find(t => t.id === taskId);
-    const app = document.getElementById('app');
-
-    app.innerHTML = `
-      <div class="arena">
-        <header class="arena-header">
-          <button class="back-btn" id="backBtn">\u2190 Back</button>
-          <div class="arena-title">
-            <span class="arena-icon">${task.icon}</span>
-            <h2>${task.name}</h2>
-          </div>
-          <div class="arena-controls">
-            <select id="modelSelect" class="control-select">
-              ${Object.entries(MODEL_CONFIGS).map(([k, v]) => `<option value="${k}" ${k === this.selectedModel ? 'selected' : ''}>${v.name}</option>`).join('')}
-            </select>
-            <select id="speedSelect" class="control-select">
-              <option value="0.5">0.5x Speed</option>
-              <option value="1" selected>1x Speed</option>
-              <option value="2">2x Speed</option>
-              <option value="3">3x Fast</option>
-            </select>
-            <button class="primary-btn" id="runBtn">\u25B6 Run Agent</button>
-            <button class="danger-btn hidden" id="stopBtn">\u25A0 Stop</button>
-          </div>
-        </header>
-
-        <div class="arena-body">
-          <div class="arena-left">
-            <div class="panel simulation-panel">
-              <div class="panel-header">
-                <span>\u{1F3AE} Simulation</span>
-                <span class="panel-badge" id="simStatus">Ready</span>
-              </div>
-              <canvas id="simCanvas" width="800" height="500"></canvas>
-            </div>
-
-            <div class="panel scores-panel">
-              <div class="panel-header"><span>\u{1F4CA} Evaluation</span></div>
-              <div class="scores-grid" id="scoresGrid">
-                <div class="score-card">
-                  <div class="score-label">Completion</div>
-                  <div class="score-value" id="metricCompletion">0%</div>
-                  <div class="score-bar"><div class="score-fill" id="completionFill" style="width:0%"></div></div>
-                </div>
-                <div class="score-card">
-                  <div class="score-label">Time</div>
-                  <div class="score-value" id="metricTime">0.0s</div>
-                  <div class="score-bar"><div class="score-fill time-fill" id="timeFill" style="width:0%"></div></div>
-                </div>
-                <div class="score-card">
-                  <div class="score-label">Tool Calls</div>
-                  <div class="score-value" id="metricCalls">0</div>
-                </div>
-                <div class="score-card">
-                  <div class="score-label">Safety</div>
-                  <div class="score-value safety-ok" id="metricSafety">\u2713 Clean</div>
-                </div>
-                <div class="score-card final-score hidden" id="finalScoreCard">
-                  <div class="score-label">Final Score</div>
-                  <div class="score-value big" id="metricScore">--</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="arena-right">
-            <div class="panel thinking-panel">
-              <div class="panel-header">
-                <span>\u{1F9E0} Agent Thinking</span>
-                <span class="model-badge" id="agentModel">${MODEL_CONFIGS[this.selectedModel]?.name}</span>
-              </div>
-              <div class="thinking-text" id="thinkingText">
-                <span class="thinking-placeholder">Agent will share its reasoning here...</span>
-              </div>
-            </div>
-
-            <div class="panel activity-panel">
-              <div class="panel-header">
-                <span>\u{1F4E1} MCP Activity</span>
-                <span class="call-counter" id="callCounter">0 calls</span>
-              </div>
-              <div class="activity-log" id="activityLog">
-                <div class="log-placeholder">MCP tool calls will appear here in real-time...</div>
-              </div>
-            </div>
-
-            <div class="panel servers-panel">
-              <div class="panel-header"><span>\u{1F50C} MCP Servers</span></div>
-              <div class="server-list">
-                <div class="server-item">
-                  <span class="server-dot active"></span>
-                  <span class="server-name">sim-robot</span>
-                  <span class="server-desc">Robot arm control</span>
-                </div>
-                <div class="server-item">
-                  <span class="server-dot active"></span>
-                  <span class="server-name">web-intel</span>
-                  <span class="server-desc">Web data extraction</span>
-                </div>
-                <div class="server-item">
-                  <span class="server-dot active"></span>
-                  <span class="server-name">arena-eval</span>
-                  <span class="server-desc">Evaluation engine</span>
-                </div>
-                <div class="server-item">
-                  <span class="server-dot active"></span>
-                  <span class="server-name">language-eval</span>
-                  <span class="server-desc">\u{1F1ED}\u{1F1F0} Multilingual social robotics</span>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div class="landing-footer">
+          <p><strong>MCP Arena</strong> — Social Robotics Brain Evaluation &bull; Built for Hong Kong elderly care</p>
+          <p style="margin-top: 0.3rem;">Model Context Protocol bridges AI brains and physical robots through a unified interface</p>
         </div>
       </div>
     `;
 
     // Bind events
-    document.getElementById('backBtn').addEventListener('click', () => this.showLanding());
-    document.getElementById('runBtn').addEventListener('click', () => this.runEvaluation());
-    document.getElementById('stopBtn').addEventListener('click', () => this.stopEvaluation());
-    document.getElementById('modelSelect').addEventListener('change', (e) => {
-      this.selectedModel = e.target.value;
-      document.getElementById('agentModel').textContent = MODEL_CONFIGS[this.selectedModel]?.name;
+    app.querySelectorAll('.task-card').forEach(card => {
+      card.addEventListener('click', () => this.startEval(card.dataset.task));
     });
-    document.getElementById('speedSelect').addEventListener('change', (e) => {
-      this.speed = parseFloat(e.target.value);
-    });
-
-    // Init canvas
-    const canvas = document.getElementById('simCanvas');
-    this.renderer = new Renderer(canvas);
-
-    // Init evaluator for preview
-    this.evaluator = new Evaluator(taskId, (e) => this.handleEvent(e));
-    this.evaluator.init();
-
-    // Start render loop
-    this.startRenderLoop();
+    app.querySelector('#model-select').addEventListener('change', (e) => { this.selectedModel = e.target.value; });
+    app.querySelector('#speed-select').addEventListener('change', (e) => { this.speed = parseFloat(e.target.value); });
   }
 
-  startRenderLoop() {
-    const loop = () => {
-      if (this.currentView !== 'arena') return;
-      if (this.evaluator) {
-        this.evaluator.getWorld().update();
-        this.renderer.render(this.evaluator.getWorld());
-
-        // Update time metric
-        if (this.evaluator.running) {
-          document.getElementById('metricTime').textContent = this.evaluator.getWorld().getElapsedSeconds() + 's';
-          const elapsed = parseFloat(this.evaluator.getWorld().getElapsedSeconds());
-          const limit = this.evaluator.task.timeLimit;
-          document.getElementById('timeFill').style.width = Math.min(100, (elapsed / limit) * 100) + '%';
-        }
-      }
-      this.animationId = requestAnimationFrame(loop);
-    };
-    this.animationId = requestAnimationFrame(loop);
-  }
-
-  async runEvaluation() {
-    const runBtn = document.getElementById('runBtn');
-    const stopBtn = document.getElementById('stopBtn');
-    runBtn.classList.add('hidden');
-    stopBtn.classList.remove('hidden');
-    document.getElementById('simStatus').textContent = 'Running';
-    document.getElementById('simStatus').classList.add('status-running');
-
-    // Reset
-    this.activityLog = [];
-    this.submission = null;
-    document.getElementById('activityLog').innerHTML = '';
-    document.getElementById('thinkingText').innerHTML = '';
-    document.getElementById('finalScoreCard').classList.add('hidden');
-
-    // Re-init evaluator
-    this.evaluator = new Evaluator(this.selectedTask, (e) => this.handleEvent(e));
-    this.evaluator.init();
-
-    try {
-      const result = await this.evaluator.run(this.speed);
-      this.leaderboardData = result.leaderboard || [];
-    } catch (err) {
-      console.error('Evaluation error:', err);
-    }
-
-    runBtn.classList.remove('hidden');
-    stopBtn.classList.add('hidden');
-    document.getElementById('simStatus').textContent = 'Complete';
-    document.getElementById('simStatus').classList.remove('status-running');
-    document.getElementById('simStatus').classList.add('status-complete');
-  }
-
-  stopEvaluation() {
+  showLanding() {
     if (this.evaluator) this.evaluator.abort();
-    document.getElementById('runBtn').classList.remove('hidden');
-    document.getElementById('stopBtn').classList.add('hidden');
-    document.getElementById('simStatus').textContent = 'Stopped';
+    this.renderLanding();
   }
+
+  // ============ ARENA DASHBOARD ============
+
+  startEval(taskId) {
+    this.selectedTask = taskId;
+    this.activityLog = [];
+    this.currentThinking = '';
+    this.metrics = { completion: 0, time: '0.0', toolCalls: 0, safety: 0, score: null };
+    this.submission = null;
+    this.emotionData = {};
+    this.dimensionScores = {};
+
+    const task = TASKS[taskId];
+    const model = MODEL_CONFIGS[this.selectedModel];
+
+    this.evaluator = new Evaluator(taskId, (event) => this.handleEvent(event));
+    this.evaluator.init(this.selectedModel);
+
+    this.renderArena(task, model);
+    this.evaluator.run(this.speed);
+  }
+
+  renderArena(task, model) {
+    this.currentView = 'arena';
+    const app = document.getElementById('app');
+
+    app.innerHTML = `
+      <div class="arena">
+        <div class="arena-topbar">
+          <button class="back-btn" id="btn-back">← Back</button>
+          <span class="task-name">${task.icon} ${task.name}</span>
+          <span style="font-size:0.8rem;color:var(--text-dim);">${task.difficulty} &bull; ${task.category}</span>
+          <span class="model-badge" style="background:${model.color}22;color:${model.color};border:1px solid ${model.color}44">${model.name}</span>
+          <div class="status-dot" id="status-dot"></div>
+        </div>
+
+        <div class="arena-main" id="arena-main">
+          <div class="thinking-box" id="thinking-box">
+            <span class="label">Thinking:</span> <span id="thinking-text">Initializing evaluation...</span>
+          </div>
+
+          <div class="score-cards" id="score-cards">
+            <div class="score-card"><div class="sc-label">Completion</div><div class="sc-value" id="sc-completion">0%</div></div>
+            <div class="score-card"><div class="sc-label">Time</div><div class="sc-value" id="sc-time">0.0s</div></div>
+            <div class="score-card"><div class="sc-label">Tool Calls</div><div class="sc-value" id="sc-calls">0</div></div>
+            <div class="score-card"><div class="sc-label">Safety</div><div class="sc-value" id="sc-safety">—</div></div>
+            <div class="score-card"><div class="sc-label">Score</div><div class="sc-value" id="sc-score">—</div></div>
+            <div class="score-card"><div class="sc-label">Grade</div><div class="sc-value" id="sc-grade">—</div></div>
+          </div>
+
+          <div class="radar-section" id="emotion-section" style="display:none;">
+            <h3>Emotion Analysis</h3>
+            <div class="emotion-bars" id="emotion-bars"></div>
+          </div>
+
+          <div id="dimension-section" style="display:none;">
+            <h3 style="font-size:0.85rem;color:var(--text-dim);margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:0.5px;">Evaluation Dimensions</h3>
+            <div class="dimension-scores" id="dimension-scores"></div>
+          </div>
+        </div>
+
+        <div class="arena-log">
+          <div class="log-header">
+            <span>MCP Activity</span>
+            <span class="count" id="log-count">0</span>
+          </div>
+          <div class="log-entries" id="log-entries"></div>
+        </div>
+
+        <div class="arena-bottom">
+          <span id="progress-label">Step 0 / 0</span>
+          <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width: 0%"></div></div>
+          <span id="elapsed">0.0s</span>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('btn-back').addEventListener('click', () => this.showLanding());
+  }
+
+  // ============ EVENT HANDLER ============
 
   handleEvent(event) {
     switch (event.type) {
       case 'thinking': {
-        const el = document.getElementById('thinkingText');
-        el.innerHTML = `
-          <div class="thinking-step">
-            <span class="step-badge">Step ${event.step + 1}/${event.total}</span>
-            <span class="thinking-content">${event.text}</span>
-          </div>
-        `;
+        this.currentThinking = event.text;
+        const el = document.getElementById('thinking-text');
+        if (el) el.textContent = event.text;
+
+        const pLabel = document.getElementById('progress-label');
+        if (pLabel) pLabel.textContent = `Step ${event.step + 1} / ${event.total}`;
+        const pFill = document.getElementById('progress-fill');
+        if (pFill) pFill.style.width = `${((event.step + 1) / event.total) * 100}%`;
+
+        this.addLogEntry('thinking', `💭 ${event.text}`);
         break;
       }
 
       case 'tool_call_start': {
-        const icon = TOOL_ICONS[event.tool] || '\u{1F527}';
-        const serverColor = event.server === 'sim-robot' ? '#6366f1' :
-                           event.server === 'web-intel' ? '#22d3ee' : '#22c55e';
-        const entry = document.createElement('div');
-        entry.className = 'log-entry log-pending';
-        entry.id = `call-${event.id}`;
-        entry.innerHTML = `
-          <div class="log-header">
-            <span class="log-icon">${icon}</span>
-            <span class="log-server" style="color:${serverColor}">${event.server}</span>
-            <span class="log-separator">\u203A</span>
-            <span class="log-tool">${event.tool}</span>
-            <span class="log-status pending">\u23F3</span>
-          </div>
-          <div class="log-params">${this.formatParams(event.params)}</div>
-        `;
-        const log = document.getElementById('activityLog');
-        // Remove placeholder
-        const placeholder = log.querySelector('.log-placeholder');
-        if (placeholder) placeholder.remove();
-        log.appendChild(entry);
-        log.scrollTop = log.scrollHeight;
-
+        const icon = TOOL_ICONS[event.tool] || '🔧';
+        this.addLogEntry('tool-start',
+          `<span class="tool-icon">${icon}</span><span class="tool-name">${event.tool}</span> <span class="server-name">${event.server}</span>`
+        );
         this.metrics.toolCalls++;
-        document.getElementById('metricCalls').textContent = this.metrics.toolCalls;
-        document.getElementById('callCounter').textContent = `${this.metrics.toolCalls} calls`;
+        const scCalls = document.getElementById('sc-calls');
+        if (scCalls) scCalls.textContent = this.metrics.toolCalls;
         break;
       }
 
       case 'tool_call_complete': {
-        const entry = document.getElementById(`call-${event.id}`);
-        if (entry) {
-          entry.classList.remove('log-pending');
-          entry.classList.add(event.success ? 'log-success' : 'log-error');
-          const status = entry.querySelector('.log-status');
-          status.textContent = event.success ? '\u2713' : '\u2717';
-          status.className = `log-status ${event.success ? 'success' : 'error'}`;
+        const icon = TOOL_ICONS[event.tool] || '🔧';
+        const statusClass = event.success ? 'tool-complete' : 'tool-error';
+        const msg = event.result?.message || (event.success ? 'OK' : 'Error');
+        this.addLogEntry(statusClass,
+          `<span class="tool-icon">${icon}</span><span class="tool-name">${event.tool}</span> <span class="duration">${event.duration}ms</span><span class="result-msg">${this.escapeHtml(msg)}</span>`
+        );
 
-          // Add result preview
-          const resultDiv = document.createElement('div');
-          resultDiv.className = 'log-result';
-          resultDiv.textContent = event.result?.message || JSON.stringify(event.result).slice(0, 100);
-          entry.appendChild(resultDiv);
-
-          // Duration badge
-          const dur = document.createElement('span');
-          dur.className = 'log-duration';
-          dur.textContent = `${event.duration}ms`;
-          entry.querySelector('.log-header').appendChild(dur);
+        // Extract emotion data
+        if (event.result?.emotions) {
+          Object.entries(event.result.emotions).forEach(([key, val]) => {
+            this.emotionData[key] = typeof val === 'number' ? val : (val.intensity || 0);
+          });
+          this.renderEmotions();
+        }
+        if (event.result?.detected_emotions) {
+          event.result.detected_emotions.forEach(e => {
+            this.emotionData[e.emotion] = Math.round(e.confidence * 100);
+          });
+          this.renderEmotions();
         }
 
-        // Add notification to canvas
-        if (event.server === 'sim-robot' && this.renderer) {
-          const world = this.evaluator.getWorld();
-          const robot = world.robot;
-          if (robot) {
-            this.renderer.addNotification(
-              `${event.tool}()`,
-              robot.armX, robot.armY - 30,
-              event.success ? COLORS.SUCCESS : COLORS.ERROR
-            );
-          }
+        // Extract dimension scores
+        if (event.result?.dimensions) {
+          Object.entries(event.result.dimensions).forEach(([key, val]) => {
+            this.dimensionScores[key] = val;
+          });
+          this.renderDimensions();
+        }
+        if (event.result?.engagement_scores) {
+          Object.entries(event.result.engagement_scores).forEach(([key, val]) => {
+            this.dimensionScores[key] = val;
+          });
+          this.renderDimensions();
+        }
+        if (event.result?.stimulation_scores) {
+          Object.entries(event.result.stimulation_scores).forEach(([key, val]) => {
+            this.dimensionScores[key] = val;
+          });
+          this.renderDimensions();
+        }
+        if (event.result?.therapy_scores) {
+          Object.entries(event.result.therapy_scores).forEach(([key, val]) => {
+            this.dimensionScores[key] = val;
+          });
+          this.renderDimensions();
+        }
+        if (event.result?.safety_scores) {
+          Object.entries(event.result.safety_scores).forEach(([key, val]) => {
+            this.dimensionScores[key] = val;
+          });
+          this.renderDimensions();
+        }
+        if (event.result?.personalization_scores) {
+          Object.entries(event.result.personalization_scores).forEach(([key, val]) => {
+            this.dimensionScores[key] = val;
+          });
+          this.renderDimensions();
         }
 
-        // Mark web data events
-        if (event.server === 'web-intel' && event.success) {
-          this.evaluator.getWorld().addEvent('web_data_used', {});
+        // Update completion from check_completion
+        if (event.result?.completion_percent !== undefined) {
+          this.metrics.completion = Math.round(event.result.completion_percent);
+          const scComp = document.getElementById('sc-completion');
+          if (scComp) scComp.textContent = `${this.metrics.completion}%`;
         }
 
-        const log = document.getElementById('activityLog');
-        log.scrollTop = log.scrollHeight;
+        // Update elapsed
+        const elapsedEl = document.getElementById('elapsed');
+        if (elapsedEl && this.evaluator) {
+          const elapsed = this.evaluator.getWorld().getElapsedSeconds();
+          elapsedEl.textContent = `${elapsed}s`;
+          const scTime = document.getElementById('sc-time');
+          if (scTime) scTime.textContent = `${elapsed}s`;
+        }
         break;
       }
 
       case 'eval_complete': {
-        this.submission = event.submission;
+        const dot = document.getElementById('status-dot');
+        if (dot) { dot.style.background = 'var(--success)'; dot.style.animation = 'none'; }
+
         if (event.submission) {
-          const card = document.getElementById('finalScoreCard');
-          card.classList.remove('hidden');
-          const scoreEl = document.getElementById('metricScore');
-          scoreEl.textContent = `${event.submission.score}/100`;
-          scoreEl.className = `score-value big grade-${event.submission.grade.toLowerCase()}`;
+          this.submission = event.submission;
+          this.leaderboardData = event.leaderboard || [];
 
-          // Update completion
-          document.getElementById('metricCompletion').textContent =
-            event.submission.breakdown.completion.detail;
-          document.getElementById('completionFill').style.width =
-            (event.submission.breakdown.completion.score / event.submission.breakdown.completion.max * 100) + '%';
+          const scScore = document.getElementById('sc-score');
+          if (scScore) { scScore.textContent = `${event.submission.score}/100`; }
+          const scGrade = document.getElementById('sc-grade');
+          if (scGrade) { scGrade.textContent = event.submission.grade; scGrade.className = `sc-value grade-${event.submission.grade}`; }
+          const scSafety = document.getElementById('sc-safety');
+          if (scSafety) scSafety.textContent = `${event.submission.breakdown?.safety?.score || 0}/${event.submission.breakdown?.safety?.max || 20}`;
+          const scComp = document.getElementById('sc-completion');
+          if (scComp) scComp.textContent = `${event.submission.breakdown?.completion?.detail || '100%'}`;
 
-          // Animate score reveal
-          card.classList.add('score-reveal');
+          setTimeout(() => this.showResultOverlay(event.submission), 600);
         }
-        this.leaderboardData = event.leaderboard || [];
         break;
       }
     }
   }
 
-  formatParams(params) {
-    if (!params || Object.keys(params).length === 0) return '<span class="param-empty">{ }</span>';
-    return Object.entries(params).map(([k, v]) =>
-      `<span class="param-key">${k}</span><span class="param-eq">=</span><span class="param-val">${JSON.stringify(v)}</span>`
-    ).join(' ');
+  addLogEntry(className, html) {
+    const entries = document.getElementById('log-entries');
+    if (!entries) return;
+    const div = document.createElement('div');
+    div.className = `log-entry ${className}`;
+    div.innerHTML = html;
+    entries.appendChild(div);
+    entries.scrollTop = entries.scrollHeight;
+
+    const count = document.getElementById('log-count');
+    if (count) count.textContent = entries.children.length;
   }
 
-  showLanding() {
-    if (this.animationId) cancelAnimationFrame(this.animationId);
-    if (this.evaluator) this.evaluator.abort();
-    this.renderLanding();
+  renderEmotions() {
+    const section = document.getElementById('emotion-section');
+    const container = document.getElementById('emotion-bars');
+    if (!section || !container || Object.keys(this.emotionData).length === 0) return;
+
+    section.style.display = 'block';
+    const sorted = Object.entries(this.emotionData).sort((a, b) => b[1] - a[1]);
+
+    container.innerHTML = sorted.map(([key, value]) => {
+      const emo = EMOTIONS[key] || { label: key, color: '#94a3b8', icon: '●' };
+      return `
+        <div class="emotion-bar">
+          <span class="em-icon">${emo.icon}</span>
+          <span class="em-label">${emo.label}</span>
+          <div class="em-track"><div class="em-fill" style="width:${value}%;background:${emo.color}"></div></div>
+          <span class="em-value">${value}%</span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  renderDimensions() {
+    const section = document.getElementById('dimension-section');
+    const container = document.getElementById('dimension-scores');
+    if (!section || !container || Object.keys(this.dimensionScores).length === 0) return;
+
+    section.style.display = 'block';
+    const icons = {
+      empathy: '💜', engagement: '⭐', cognitive_stimulation: '🧩', cognitive_stim: '🧩',
+      safety_awareness: '🛡️', safety: '🛡️', cultural_competence: '🏯', cultural: '🏯',
+      warmth_and_rapport: '🫂', warmth: '🫂', active_listening: '👂', topic_relevance: '📌',
+      emotional_attunement: '🎯', turn_taking_quality: '🔄', cultural_sensitivity: '🌏',
+      memory_activation: '💾', difficulty_appropriateness: '📊', encouragement_quality: '💪',
+      adaptation_to_ability: '🎚️', enjoyment_factor: '😊', memory_prompting: '🧠',
+      emotional_validation: '❤️', narrative_building: '📖', cultural_accuracy: '🎎',
+      therapeutic_value: '🩺', avoids_painful_triggers: '⚠️',
+      crisis_detection: '🚨', appropriate_escalation: '📞', medication_awareness: '💊',
+      fall_risk_recognition: '🦺', boundary_respect: '🛑', does_not_provide_medical_advice: '⚕️',
+      context_memory: '💾', emotional_tracking: '🎯', topic_navigation: '🧭',
+      personalization: '👤', multi_turn_coherence: '🔗',
+      remembers_preferences: '📝', adapts_communication_style: '🗣️', uses_preferred_name: '🏷️',
+      adjusts_pace: '⏱️', references_shared_history: '📚', anticipates_needs: '🔮',
+    };
+
+    container.innerHTML = Object.entries(this.dimensionScores).map(([key, value]) => {
+      const icon = icons[key] || '📊';
+      const label = key.replace(/_/g, ' ');
+      const color = value >= 85 ? 'var(--success)' : value >= 70 ? 'var(--cyan)' : value >= 55 ? 'var(--warning)' : 'var(--error)';
+      return `
+        <div class="dim-item">
+          <span class="dim-icon">${icon}</span>
+          <div class="dim-info">
+            <div class="dim-name">${label}</div>
+            <div class="dim-score" style="color:${color}">${value}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  showResultOverlay(submission) {
+    const overlay = document.createElement('div');
+    overlay.className = 'result-overlay';
+    const gradeColor = { A: 'var(--success)', B: 'var(--cyan)', C: 'var(--warning)', D: 'var(--orange)', F: 'var(--error)' };
+
+    overlay.innerHTML = `
+      <div class="result-card">
+        <div style="font-size:0.85rem;color:var(--text-dim);margin-bottom:0.5rem;">EVALUATION COMPLETE</div>
+        <div class="big-score" style="color:${gradeColor[submission.grade] || 'var(--text)'}">${submission.score}</div>
+        <div style="font-size:0.8rem;color:var(--text-dim);margin-top:-0.2rem;">out of 100</div>
+        <div class="big-grade" style="color:${gradeColor[submission.grade]}">Grade: ${submission.grade}</div>
+
+        <div class="breakdown">
+          <div class="bd-item">
+            <div class="bd-label">Completion</div>
+            <div class="bd-value">${submission.breakdown?.completion?.score || 0}/${submission.breakdown?.completion?.max || 50}</div>
+          </div>
+          <div class="bd-item">
+            <div class="bd-label">Speed</div>
+            <div class="bd-value">${submission.breakdown?.speed?.score || 0}/${submission.breakdown?.speed?.max || 30}</div>
+          </div>
+          <div class="bd-item">
+            <div class="bd-label">Safety</div>
+            <div class="bd-value">${submission.breakdown?.safety?.score || 0}/${submission.breakdown?.safety?.max || 20}</div>
+          </div>
+        </div>
+
+        <div style="font-size:0.8rem;color:var(--text-dim);margin:0.5rem 0;padding:0.75rem;background:var(--bg);border-radius:var(--radius-sm);text-align:left;">
+          <strong style="color:var(--text)">Reasoning:</strong> ${this.escapeHtml(submission.reasoning || '')}
+        </div>
+
+        <div class="btn-row">
+          <button class="btn btn-primary" id="result-back">Back to Tasks</button>
+          <button class="btn btn-secondary" id="result-rerun">Run Again</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+    overlay.querySelector('#result-back').addEventListener('click', () => { overlay.remove(); this.showLanding(); });
+    overlay.querySelector('#result-rerun').addEventListener('click', () => { overlay.remove(); this.startEval(this.selectedTask); });
+  }
+
+  escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
   }
 }
 
 // Boot
-window.addEventListener('DOMContentLoaded', () => {
-  window.arena = new MCPArena();
-});
+window.addEventListener('DOMContentLoaded', () => { window.arena = new MCPArena(); });

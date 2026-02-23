@@ -143,8 +143,14 @@ export class ArenaEvalServer {
           break;
         }
         case 'data_extracted': {
-          // Check if web data was used (tracked via events)
-          met = this.world.events.some(e => e.type === 'web_data_used');
+          // Check if any evaluation event was fired by any MCP server
+          met = this.world.events.some(e =>
+            e.type === 'web_data_used' || e.type === 'language_eval' ||
+            e.type === 'emotion_analyzed' || e.type === 'empathy_assessed' ||
+            e.type === 'distress_detected' || e.type === 'conversation_quality' ||
+            e.type === 'companion_eval' || e.type === 'cognitive_eval' ||
+            e.type === 'speech_benchmark' || e.type === 'speech_eval'
+          );
           break;
         }
         case 'all_zones_filled': {

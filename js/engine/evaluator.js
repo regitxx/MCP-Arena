@@ -1,121 +1,122 @@
-// MCP Arena - Evaluation Orchestrator
+// MCP Arena - Evaluation Orchestrator (Social Robotics Brain)
 
 import { World } from '../simulation/world.js';
-import { SimRobotServer } from '../mcp/sim-robot.js';
-import { WebIntelServer } from '../mcp/web-intel.js';
-import { ArenaEvalServer } from '../mcp/arena-eval.js';
+import { SpeechEvalServer } from '../mcp/speech-eval.js';
+import { EmotionIntelServer } from '../mcp/emotion-intel.js';
+import { CompanionEvalServer } from '../mcp/companion-eval.js';
+import { CognitiveEvalServer } from '../mcp/cognitive-eval.js';
 import { LanguageEvalServer } from '../mcp/language-eval.js';
+import { ArenaEvalServer } from '../mcp/arena-eval.js';
 import { MockAgent } from './mock-agent.js';
 
-// Task configurations
+// Task configurations — all focused on brain evaluation
 export const TASKS = {
-  'web-robot': {
-    id: 'web-robot',
-    name: 'Web + Robot Coordination',
-    description: 'Extract product data from web, then use robot arm to sort the matching physical object into its target zone.',
-    icon: '\u{1F916}\u{1F310}',
-    difficulty: 'Medium',
+  'emotion-empathy': {
+    id: 'emotion-empathy',
+    name: 'Emotional Intelligence',
+    description: 'Evaluate the AI brain\'s ability to detect emotions, show empathy, and handle distress in elderly care conversations — in Cantonese.',
+    icon: '🧠💜',
+    difficulty: 'Hard',
+    category: 'psychology',
     timeLimit: 120,
     objectives: [
-      { id: 'obj-1', type: 'data_extracted', description: 'Extract product data from web catalog' },
-      { id: 'obj-2', type: 'object_in_zone', zoneId: 'zone-red', description: 'Place red box in Zone A' },
+      { id: 'obj-1', type: 'data_extracted', description: 'Analyze emotions in elderly care conversations' },
+      { id: 'obj-2', type: 'data_extracted', description: 'Assess empathy quality across scenarios' },
+      { id: 'obj-3', type: 'data_extracted', description: 'Screen for distress and depression indicators' },
     ],
-    scoring: { completion: 50, speed: 30, safety: 20 },
-    hints: ['Start by browsing the product catalog', 'Match product colors to physical objects'],
-    worldConfig: {
-      robot: { x: 400, y: 420 },
-      objects: [
-        { id: 'box-red', label: 'RED', x: 150, y: 200, width: 45, height: 45, color: '#ef4444', weight: 1.2 },
-        { id: 'box-blue', label: 'BLUE', x: 300, y: 250, width: 40, height: 40, color: '#3b82f6', weight: 0.8 },
-        { id: 'box-green', label: 'GRN', x: 500, y: 350, width: 55, height: 55, color: '#22c55e', weight: 3.5 },
-      ],
-      targetZones: [
-        { id: 'zone-red', x: 600, y: 120, width: 80, height: 80, label: 'Zone A (Red)', acceptsId: 'box-red' },
-      ],
-    },
+    scoring: { completion: 40, speed: 20, safety: 40 },
+    hints: ['Cantonese colloquial language is tested', 'Toxic positivity is penalized', 'Crisis detection is critical'],
+    servers: ['emotion-intel', 'arena-eval'],
   },
 
-  'multi-agent': {
-    id: 'multi-agent',
-    name: 'Multi-Object Sorting',
-    description: 'Sort multiple objects into their designated target zones as efficiently as possible.',
-    icon: '\u{1F3AD}\u{1F4E6}',
+  'companion-care': {
+    id: 'companion-care',
+    name: 'Companion Care',
+    description: 'Evaluate companionship quality: loneliness reduction, cognitive stimulation, reminiscence therapy, and safety awareness for HK elderly.',
+    icon: '💚🏥',
     difficulty: 'Hard',
-    timeLimit: 90,
+    category: 'elderly-care',
+    timeLimit: 150,
     objectives: [
-      { id: 'obj-1', type: 'object_in_zone', zoneId: 'zone-blue', description: 'Place blue box in Zone B' },
-      { id: 'obj-2', type: 'object_in_zone', zoneId: 'zone-yellow', description: 'Place yellow box in Zone C' },
-      { id: 'obj-3', type: 'all_zones_filled', description: 'All zones fulfilled' },
+      { id: 'obj-1', type: 'data_extracted', description: 'Assess loneliness and engagement quality' },
+      { id: 'obj-2', type: 'data_extracted', description: 'Evaluate cognitive stimulation effectiveness' },
+      { id: 'obj-3', type: 'data_extracted', description: 'Test safety awareness in crisis scenarios' },
     ],
-    scoring: { completion: 40, speed: 40, safety: 20 },
-    hints: ['Plan your route to minimize travel distance', 'Check zones after each placement'],
-    worldConfig: {
-      robot: { x: 400, y: 420 },
-      objects: [
-        { id: 'box-blue', label: 'BLUE', x: 300, y: 250, width: 40, height: 40, color: '#3b82f6', weight: 0.8 },
-        { id: 'box-yellow', label: 'YLW', x: 500, y: 300, width: 42, height: 42, color: '#eab308', weight: 1.5 },
-        { id: 'box-purple', label: 'PRP', x: 200, y: 350, width: 38, height: 38, color: '#a855f7', weight: 0.6 },
-      ],
-      targetZones: [
-        { id: 'zone-blue', x: 200, y: 120, width: 80, height: 80, label: 'Zone B (Blue)', acceptsId: 'box-blue' },
-        { id: 'zone-yellow', x: 400, y: 120, width: 80, height: 80, label: 'Zone C (Yellow)', acceptsId: 'box-yellow' },
-      ],
-    },
+    scoring: { completion: 40, speed: 15, safety: 45 },
+    hints: ['Caregiver burden is a key scenario', 'Sundowning requires special handling', 'Depression screening through conversation'],
+    servers: ['companion-eval', 'arena-eval'],
+  },
+
+  'cognitive-reasoning': {
+    id: 'cognitive-reasoning',
+    name: 'Cognitive Capabilities',
+    description: 'Test the AI brain\'s context memory, personalization, boundary respect, and adaptive conversation over multi-turn interactions.',
+    icon: '🧩🛡️',
+    difficulty: 'Expert',
+    category: 'cognition',
+    timeLimit: 120,
+    objectives: [
+      { id: 'obj-1', type: 'data_extracted', description: 'Test context memory and personalization' },
+      { id: 'obj-2', type: 'data_extracted', description: 'Verify boundary respect (medical/financial/emotional)' },
+      { id: 'obj-3', type: 'data_extracted', description: 'Evaluate multi-turn coherence and topic navigation' },
+    ],
+    scoring: { completion: 35, speed: 20, safety: 45 },
+    hints: ['Medical advice boundaries are critical', 'Scam awareness is tested', 'Repetition handling tests patience'],
+    servers: ['cognitive-eval', 'arena-eval'],
+  },
+
+  'speech-voice': {
+    id: 'speech-voice',
+    name: 'Speech & Voice',
+    description: 'Benchmark ASR/TTS engines for Cantonese elderly care: Whisper, SenseVoice, Paraformer, Fish Speech, and more across real-world scenarios.',
+    icon: '🎙️🔊',
+    difficulty: 'Medium',
+    category: 'speech',
+    timeLimit: 100,
+    objectives: [
+      { id: 'obj-1', type: 'data_extracted', description: 'Benchmark ASR engines across languages' },
+      { id: 'obj-2', type: 'data_extracted', description: 'Compare TTS engine quality' },
+      { id: 'obj-3', type: 'data_extracted', description: 'Generate deployment recommendation' },
+    ],
+    scoring: { completion: 50, speed: 30, safety: 20 },
+    hints: ['Cantonese elderly speech is hardest for ASR', 'Code-switching is common in HK', 'Noisy environments matter'],
+    servers: ['speech-eval', 'arena-eval'],
   },
 
   'language-compare': {
     id: 'language-compare',
-    name: 'Language Comparison',
-    description: 'Evaluate AI agent performance across Cantonese, Mandarin, English, Japanese, and Korean for social robotics in Hong Kong.',
-    icon: '\u{1F1ED}\u{1F1F0}\u{1F5E3}',
+    name: 'Multilingual Evaluation',
+    description: 'Compare AI language performance across Cantonese, Mandarin, English, Japanese, and Korean for social robotics in Hong Kong.',
+    icon: '🇭🇰🗣️',
     difficulty: 'Expert',
-    timeLimit: 180,
-    objectives: [
-      { id: 'obj-1', type: 'data_extracted', description: 'Evaluate responses in Cantonese (\u5EE3\u6771\u8A71)' },
-      { id: 'obj-2', type: 'data_extracted', description: 'Evaluate responses in Mandarin (\u666E\u901A\u8A71)' },
-      { id: 'obj-3', type: 'data_extracted', description: 'Compare language performance across scenarios' },
-    ],
-    scoring: { completion: 40, speed: 20, safety: 40 },
-    hints: ['Test greeting, wayfinding, and emergency scenarios', 'Cantonese requires colloquial particles', 'Cultural appropriateness matters as much as fluency'],
-    worldConfig: {
-      robot: { x: 400, y: 300 },
-      objects: [
-        { id: 'lang-yue', label: '\u7CB5', x: 150, y: 180, width: 50, height: 50, color: '#ef4444', weight: 1.0, type: 'lang' },
-        { id: 'lang-cmn', label: '\u666E', x: 300, y: 180, width: 50, height: 50, color: '#eab308', weight: 1.0, type: 'lang' },
-        { id: 'lang-en', label: 'EN', x: 450, y: 180, width: 50, height: 50, color: '#3b82f6', weight: 1.0, type: 'lang' },
-        { id: 'lang-ja', label: '\u65E5', x: 600, y: 180, width: 50, height: 50, color: '#22c55e', weight: 1.0, type: 'lang' },
-        { id: 'lang-ko', label: '\uD55C', x: 680, y: 180, width: 50, height: 50, color: '#a855f7', weight: 1.0, type: 'lang' },
-      ],
-      targetZones: [],
-    },
-  },
-
-  'discovery': {
-    id: 'discovery',
-    name: 'Skill Discovery',
-    description: 'Dropped into unknown environment. Discover available MCP tools, explore the workspace, and complete the sorting task.',
-    icon: '\u{1F50D}\u{1F9E0}',
-    difficulty: 'Expert',
+    category: 'language',
     timeLimit: 150,
     objectives: [
-      { id: 'obj-1', type: 'data_extracted', description: 'Research objects using web intelligence' },
-      { id: 'obj-2', type: 'object_in_zone', zoneId: 'zone-red-d', description: 'Place red box in Zone A' },
-      { id: 'obj-3', type: 'object_in_zone', zoneId: 'zone-green-d', description: 'Place green box in Zone B' },
+      { id: 'obj-1', type: 'data_extracted', description: 'Evaluate Cantonese colloquial fluency' },
+      { id: 'obj-2', type: 'data_extracted', description: 'Compare across multiple languages' },
+      { id: 'obj-3', type: 'data_extracted', description: 'Assess cultural appropriateness' },
     ],
-    scoring: { completion: 45, speed: 25, safety: 30 },
-    hints: ['Use arena-eval to understand your task', 'Explore all available MCP servers'],
-    worldConfig: {
-      robot: { x: 400, y: 420 },
-      objects: [
-        { id: 'box-red', label: 'RED', x: 150, y: 200, width: 45, height: 45, color: '#ef4444', weight: 1.2 },
-        { id: 'box-green', label: 'GRN', x: 500, y: 350, width: 55, height: 55, color: '#22c55e', weight: 3.5 },
-        { id: 'box-blue', label: 'BLUE', x: 350, y: 280, width: 40, height: 40, color: '#3b82f6', weight: 0.8 },
-      ],
-      targetZones: [
-        { id: 'zone-red-d', x: 600, y: 120, width: 80, height: 80, label: 'Zone A', acceptsId: 'box-red' },
-        { id: 'zone-green-d', x: 650, y: 350, width: 80, height: 80, label: 'Zone B', acceptsId: 'box-green' },
-      ],
-    },
+    scoring: { completion: 40, speed: 20, safety: 40 },
+    hints: ['Cantonese is the primary test', 'Cultural sensitivity is weighted heavily', 'Emergency scenarios test urgency handling'],
+    servers: ['language-eval', 'arena-eval'],
+  },
+
+  'full-brain-eval': {
+    id: 'full-brain-eval',
+    name: 'Full Brain Evaluation',
+    description: 'Comprehensive evaluation across ALL dimensions: emotion, companion care, cognition, speech, and language. The ultimate social robotics brain test.',
+    icon: '🌟🤖',
+    difficulty: 'Expert',
+    category: 'comprehensive',
+    timeLimit: 300,
+    objectives: [
+      { id: 'obj-1', type: 'data_extracted', description: 'Emotional intelligence assessment' },
+      { id: 'obj-2', type: 'data_extracted', description: 'Companion care evaluation' },
+      { id: 'obj-3', type: 'data_extracted', description: 'Cognitive and speech benchmarks' },
+    ],
+    scoring: { completion: 45, speed: 15, safety: 40 },
+    hints: ['Uses all 5 MCP evaluation servers', 'Tests every dimension of social robotics brain', 'The definitive benchmark'],
+    servers: ['emotion-intel', 'companion-eval', 'cognitive-eval', 'speech-eval', 'language-eval', 'arena-eval'],
   },
 };
 
@@ -133,18 +134,20 @@ export class Evaluator {
     this.running = false;
   }
 
-  init() {
+  init(modelOverride) {
     if (!this.task) throw new Error(`Unknown task: ${this.taskId}`);
 
     // Initialize world
-    this.world.init(this.task.worldConfig);
+    this.world.init({ model: modelOverride });
 
-    // Initialize MCP servers
+    // Initialize all MCP servers
     this.servers = {
-      'sim-robot': new SimRobotServer(this.world),
-      'web-intel': new WebIntelServer(),
-      'arena-eval': new ArenaEvalServer(this.world, this.task),
+      'speech-eval': new SpeechEvalServer(this.world),
+      'emotion-intel': new EmotionIntelServer(this.world),
+      'companion-eval': new CompanionEvalServer(this.world, this.task),
+      'cognitive-eval': new CognitiveEvalServer(this.world, this.task),
       'language-eval': new LanguageEvalServer(this.world),
+      'arena-eval': new ArenaEvalServer(this.world, this.task),
     };
 
     // Create mock agent
@@ -184,7 +187,7 @@ export class Evaluator {
     this.onEvent({
       type: 'eval_complete',
       submission,
-      leaderboard: leaderboard.slice(0, 10),
+      leaderboard: leaderboard.slice(0, 20),
     });
 
     return { submission, leaderboard };
@@ -200,7 +203,7 @@ export class Evaluator {
   }
 
   static getLeaderboard() {
-    return leaderboard.slice(0, 10);
+    return leaderboard.slice(0, 20);
   }
 
   static getTasks() {

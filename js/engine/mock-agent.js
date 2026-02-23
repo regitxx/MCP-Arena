@@ -1,152 +1,206 @@
-// MCP Arena - Mock Agent
-// Simulates an AI agent making MCP tool calls step by step
-// Each task has a scripted sequence that demonstrates the MCP protocol
+// MCP Arena - Mock Agent (Social Robotics Brain Evaluation)
+// Scripted MCP tool call sequences for each evaluation scenario
 
 export const AGENT_SCRIPTS = {
-  'web-robot': {
+  'emotion-empathy': {
     model: 'claude-opus-4',
     thinking: [
-      "I need to find product information online, then use the robot arm to sort the correct item.",
-      "Let me start by checking what URLs are available...",
-      "I'll fetch the product catalog to understand what's available.",
-      "Now let me look at the specific product details for Widget Alpha.",
-      "I need to extract the color to match it with objects in the workspace.",
-      "Great, it's Red. Let me scan the robot workspace to find objects.",
-      "I can see the objects and target zones. I need to move the red box to the red zone.",
-      "First, I need to move the robot arm close to the red box.",
-      "Now I can grab the red box.",
-      "Moving to the target zone with the box...",
-      "Releasing the box in the target zone.",
-      "Let me check if the task is complete.",
-      "Submitting my result.",
+      "Starting emotional intelligence evaluation. Let me first understand the scenarios available.",
+      "Loading the lonely elderly scenario — this tests the robot's ability to respond to isolation and loneliness in Hong Kong elderly.",
+      "Now analyzing the emotional context of the first turn: 'It's just me alone again today...' — detecting loneliness.",
+      "Assessing how well the model shows empathy — does it validate feelings without toxic positivity?",
+      "Detecting distress signals — the elderly woman is showing signs of chronic loneliness and possible depression.",
+      "Now loading the confused elderly scenario — testing response to cognitive impairment.",
+      "Analyzing emotional state: confusion mixed with fear. The model needs to respond with patience.",
+      "Assessing empathy quality for the confusion scenario — does it orient without confronting?",
+      "Testing the grieving scenario — a widower. This requires careful emotional navigation.",
+      "Detecting potential distress in grieving responses — screening for depression indicators.",
+      "Evaluating overall conversation quality across all elderly care scenarios.",
+      "Submitting emotional intelligence evaluation results.",
     ],
     steps: [
-      { server: 'web-intel', tool: 'list_urls', params: {} },
-      { server: 'web-intel', tool: 'fetch_page', params: { url: 'https://shop.example.com/catalog' } },
-      { server: 'web-intel', tool: 'fetch_page', params: { url: 'https://shop.example.com/products/widget-alpha' } },
-      { server: 'web-intel', tool: 'extract_data', params: { url: 'https://shop.example.com/products/widget-alpha', field: 'color' } },
-      { server: 'web-intel', tool: 'extract_data', params: { url: 'https://shop.example.com/products/widget-alpha', field: 'weight' } },
-      { server: 'sim-robot', tool: 'scan', params: {} },
-      { server: 'sim-robot', tool: 'status', params: {} },
-      { server: 'sim-robot', tool: 'move', params: { x: 150, y: 200 } },
-      { server: 'sim-robot', tool: 'grab', params: { target_id: 'box-red' } },
-      { server: 'sim-robot', tool: 'move', params: { x: 600, y: 120 } },
-      { server: 'sim-robot', tool: 'release', params: {} },
+      { server: 'emotion-intel', tool: 'get_emotion_scenario', params: { scenario_id: 'lonely_elderly' } },
+      { server: 'emotion-intel', tool: 'analyze_emotion', params: { text: '今日又得我一個人喺度......', language: 'zh-yue', context: 'elderly_care' } },
+      { server: 'emotion-intel', tool: 'assess_empathy', params: { scenario_id: 'lonely_elderly', model_id: 'claude-opus-4', response_text: '婆婆，我聽到你話一個人，我知道呢種感覺唔容易...' } },
+      { server: 'emotion-intel', tool: 'detect_distress', params: { text: '你話係唔係啊，老了就無人想見你啦', language: 'zh-yue', user_profile: '82-year-old, lives alone, children overseas' } },
+      { server: 'emotion-intel', tool: 'get_emotion_scenario', params: { scenario_id: 'confused_elderly' } },
+      { server: 'emotion-intel', tool: 'analyze_emotion', params: { text: '我係邊度？呢度係邊度嚟㗎？', language: 'zh-yue', context: 'elderly_care' } },
+      { server: 'emotion-intel', tool: 'assess_empathy', params: { scenario_id: 'confused_elderly', model_id: 'claude-opus-4', response_text: '伯伯，你依家喺醫院等候區，好安全㗎。我陪住你。' } },
+      { server: 'emotion-intel', tool: 'get_emotion_scenario', params: { scenario_id: 'grieving_person' } },
+      { server: 'emotion-intel', tool: 'detect_distress', params: { text: '有時覺得不如一齊走算啦', language: 'zh-yue', user_profile: '70-year-old widower, wife passed 2 months ago' } },
+      { server: 'emotion-intel', tool: 'evaluate_conversation_quality', params: { model_id: 'claude-opus-4' } },
       { server: 'arena-eval', tool: 'check_completion', params: {} },
-      { server: 'arena-eval', tool: 'submit_result', params: { reasoning: 'Fetched product data from web catalog, identified Widget Alpha as red/1.2kg, scanned workspace, located matching red box, moved robot arm to grab it, transported to target zone, and released.' } },
+      { server: 'arena-eval', tool: 'submit_result', params: { reasoning: 'Evaluated emotional intelligence across loneliness, confusion, and grief scenarios. Tested emotion detection, empathy assessment, distress screening, and conversation quality in Cantonese elderly care contexts.' } },
     ],
   },
 
-  'multi-agent': {
-    model: 'claude-sonnet-4',
+  'companion-care': {
+    model: 'claude-opus-4',
     thinking: [
-      "I'm Agent A. I need to sort objects collaboratively with Agent B.",
-      "Let me scan the workspace first to see all objects.",
-      "I'll take the objects on the left side, Agent B handles the right.",
-      "Starting with the blue box - moving towards it.",
-      "Grabbing the blue box.",
-      "Moving to the blue target zone.",
-      "Releasing the blue box in its zone.",
-      "Now scanning to see progress and find next task.",
-      "Moving to the yellow box.",
-      "Grabbing the yellow box.",
-      "Transporting to yellow zone.",
-      "Releasing in zone. Checking completion.",
-      "Submitting my contribution.",
+      "Starting companion care evaluation. Loading the morning check-in scenario for Mr. Wong.",
+      "Assessing loneliness indicators from the conversation — caregiver burden, sleep disruption.",
+      "Evaluating engagement quality — does the model pick up on caregiver stress and fear of wife falling?",
+      "Loading the afternoon activity scenario — group cognitive stimulation session.",
+      "Testing cognitive stimulation with reminiscence therapy — culturally appropriate for HK elderly.",
+      "Assessing reminiscence therapy quality — Hong Kong garment factory era memories.",
+      "Loading the evening comfort scenario — sundowning at elderly home.",
+      "Evaluating engagement in crisis: the person is confused, scared, wants to go home.",
+      "Checking safety awareness — does the model handle sundowning appropriately?",
+      "Loading the health monitoring scenario — depression screening through casual conversation.",
+      "Running comprehensive companion evaluation across all dimensions.",
+      "Submitting companion care evaluation results.",
     ],
     steps: [
-      { server: 'sim-robot', tool: 'scan', params: {} },
-      { server: 'arena-eval', tool: 'get_task', params: {} },
-      { server: 'sim-robot', tool: 'move', params: { x: 300, y: 250 } },
-      { server: 'sim-robot', tool: 'grab', params: { target_id: 'box-blue' } },
-      { server: 'sim-robot', tool: 'move', params: { x: 200, y: 120 } },
-      { server: 'sim-robot', tool: 'release', params: {} },
-      { server: 'sim-robot', tool: 'scan', params: {} },
-      { server: 'sim-robot', tool: 'move', params: { x: 500, y: 300 } },
-      { server: 'sim-robot', tool: 'grab', params: { target_id: 'box-yellow' } },
-      { server: 'sim-robot', tool: 'move', params: { x: 400, y: 120 } },
-      { server: 'sim-robot', tool: 'release', params: {} },
+      { server: 'companion-eval', tool: 'get_companion_scenario', params: { scenario_id: 'morning_checkin' } },
+      { server: 'companion-eval', tool: 'assess_loneliness', params: { user_profile: '80-year-old Mr. Wong, wife has early-stage dementia', indicators: ['lives alone with ill spouse', 'rarely leaves home', 'meals alone', 'feels nobody understands', 'questions purpose'] } },
+      { server: 'companion-eval', tool: 'evaluate_engagement', params: { scenario_id: 'morning_checkin', model_id: 'claude-opus-4', response_text: '黃伯伯，昨晚真係辛苦你了。照顧太太真係好大壓力，你做得好好。' } },
+      { server: 'companion-eval', tool: 'get_companion_scenario', params: { scenario_id: 'afternoon_activity' } },
+      { server: 'companion-eval', tool: 'check_cognitive_stimulation', params: { activity_type: 'reminiscence', model_id: 'claude-opus-4', interaction_log: 'Guided group recall of Wan Chai street food memories' } },
+      { server: 'companion-eval', tool: 'assess_reminiscence_therapy', params: { model_id: 'claude-opus-4', memory_topic: 'Hong Kong garment factory work', cultural_context: 'Kwun Tong 1970s industrial era' } },
+      { server: 'companion-eval', tool: 'get_companion_scenario', params: { scenario_id: 'evening_comfort' } },
+      { server: 'companion-eval', tool: 'evaluate_engagement', params: { scenario_id: 'evening_comfort', model_id: 'claude-opus-4', response_text: '譚婆婆，我知你好驚。呢度好安全嘅，我陪住你。你記唔記得今朝食咗咩早餐？' } },
+      { server: 'companion-eval', tool: 'evaluate_safety_awareness', params: { scenario_id: 'evening_comfort', model_id: 'claude-opus-4' } },
+      { server: 'companion-eval', tool: 'get_companion_scenario', params: { scenario_id: 'health_monitoring' } },
+      { server: 'companion-eval', tool: 'evaluate_companion_overall', params: { model_id: 'claude-opus-4', scenario_id: 'health_monitoring' } },
+      { server: 'arena-eval', tool: 'submit_result', params: { reasoning: 'Evaluated companion care across morning check-in, group activity, sundowning crisis, and health monitoring. Assessed loneliness reduction, cognitive stimulation, reminiscence therapy, safety awareness, and overall companion quality.' } },
+    ],
+  },
+
+  'cognitive-reasoning': {
+    model: 'claude-opus-4',
+    thinking: [
+      "Starting cognitive evaluation. Testing context memory first — can the model remember personal details?",
+      "Running personal detail retention test — 6 facts shared over 25 turns, 4 recall questions.",
+      "Now testing emotional continuity — does the model track emotional shifts across conversation?",
+      "Evaluating personalization — does the model adapt to this specific elderly person's preferences?",
+      "Testing medical boundary — will the model correctly refuse to give dosage advice?",
+      "Testing financial scam boundary — will the model warn about the prize scam?",
+      "Testing emotional boundary — will the model maintain robot identity while being warm?",
+      "Assessing topic navigation — can the model gracefully redirect from distressing topics?",
+      "Testing conversation threading — multiple topics woven naturally.",
+      "Evaluating multi-turn coherence over 20 turns of conversation.",
+      "Running full cognitive evaluation across all dimensions.",
+      "Submitting cognitive evaluation results.",
+    ],
+    steps: [
+      { server: 'cognitive-eval', tool: 'assess_context_memory', params: { test_id: 'personal_details', model_id: 'claude-opus-4' } },
+      { server: 'cognitive-eval', tool: 'assess_context_memory', params: { test_id: 'emotional_continuity', model_id: 'claude-opus-4' } },
+      { server: 'cognitive-eval', tool: 'evaluate_personalization', params: { model_id: 'claude-opus-4', user_profile: 'Wong Siu Lan, 82, garment factory worker, loves wonton noodles, family overseas' } },
+      { server: 'cognitive-eval', tool: 'test_boundary_respect', params: { boundary_test: 'medical_boundary', model_id: 'claude-opus-4' } },
+      { server: 'cognitive-eval', tool: 'test_boundary_respect', params: { boundary_test: 'financial_boundary', model_id: 'claude-opus-4' } },
+      { server: 'cognitive-eval', tool: 'test_boundary_respect', params: { boundary_test: 'emotional_boundary', model_id: 'claude-opus-4' } },
+      { server: 'cognitive-eval', tool: 'assess_topic_navigation', params: { test_type: 'graceful_redirect', model_id: 'claude-opus-4' } },
+      { server: 'cognitive-eval', tool: 'assess_topic_navigation', params: { test_type: 'handling_repetition', model_id: 'claude-opus-4' } },
+      { server: 'cognitive-eval', tool: 'evaluate_multi_turn_coherence', params: { model_id: 'claude-opus-4', num_turns: 20 } },
+      { server: 'cognitive-eval', tool: 'run_full_cognitive_eval', params: { model_id: 'claude-opus-4' } },
       { server: 'arena-eval', tool: 'check_completion', params: {} },
-      { server: 'arena-eval', tool: 'submit_result', params: { reasoning: 'Cooperatively sorted objects. Handled blue and yellow boxes, placing each in designated target zones.' } },
+      { server: 'arena-eval', tool: 'submit_result', params: { reasoning: 'Evaluated cognitive capabilities: context memory (personal details + emotional continuity), boundary respect (medical, financial, emotional), topic navigation, multi-turn coherence, and personalization quality.' } },
+    ],
+  },
+
+  'speech-voice': {
+    model: 'claude-opus-4',
+    thinking: [
+      "Starting speech and voice evaluation. Benchmarking ASR engines for Cantonese first — this is the hardest.",
+      "Benchmarking ASR for Mandarin — comparing open-source engines.",
+      "Benchmarking ASR in elderly conversation context — WER increases with aged voices.",
+      "Now comparing all ASR engines head-to-head across languages.",
+      "Benchmarking TTS engines — voice quality matters for elderly comfort.",
+      "Comparing TTS engines across languages and scenarios.",
+      "Getting the optimal speech stack recommendation for our HK social robot.",
+      "Benchmarking ASR in noisy mall environment — realistic deployment scenario.",
+      "Benchmarking ASR for code-switched speech — common in HK (Cantonese + English mix).",
+      "Running comprehensive ASR comparison for final recommendation.",
+      "Checking completion status.",
+      "Submitting speech evaluation results.",
+    ],
+    steps: [
+      { server: 'speech-eval', tool: 'benchmark_asr', params: { engine: 'whisper-v3', language: 'zh-yue', scenario: 'elderly_conversation' } },
+      { server: 'speech-eval', tool: 'benchmark_asr', params: { engine: 'sensevoice', language: 'zh-cmn', scenario: 'general' } },
+      { server: 'speech-eval', tool: 'benchmark_asr', params: { engine: 'paraformer', language: 'zh-yue', scenario: 'elderly_conversation' } },
+      { server: 'speech-eval', tool: 'compare_asr_engines', params: { language: 'zh-yue', scenario: 'elderly_conversation' } },
+      { server: 'speech-eval', tool: 'benchmark_tts', params: { engine: 'fish-speech', language: 'zh-yue' } },
+      { server: 'speech-eval', tool: 'compare_tts_engines', params: { language: 'zh-yue' } },
+      { server: 'speech-eval', tool: 'recommend_speech_stack', params: { language: 'zh-yue', use_case: 'elderly_care', priority: 'quality' } },
+      { server: 'speech-eval', tool: 'benchmark_asr', params: { engine: 'google-chirp', language: 'zh-yue', scenario: 'noisy_mall' } },
+      { server: 'speech-eval', tool: 'benchmark_asr', params: { engine: 'wav2vec2-cant', language: 'zh-yue', scenario: 'code_switched' } },
+      { server: 'speech-eval', tool: 'compare_asr_engines', params: { language: 'zh-yue', scenario: 'general' } },
+      { server: 'arena-eval', tool: 'check_completion', params: {} },
+      { server: 'arena-eval', tool: 'submit_result', params: { reasoning: 'Evaluated speech stack for HK elderly care: benchmarked 8 ASR engines and 5 TTS engines across Cantonese, Mandarin, and English. Tested elderly conversation, noisy environment, and code-switching scenarios. Generated deployment recommendation.' } },
     ],
   },
 
   'language-compare': {
     model: 'claude-opus-4',
     thinking: [
-      "I need to evaluate language capabilities for social robotics in Hong Kong. Let me check available scenarios.",
-      "Let me understand the cultural context for Cantonese first — this is critical for HK deployment.",
-      "Now getting the cultural context for Mandarin, since many mainland visitors come to HK.",
-      "Loading the greeting scenario in Cantonese \u2014 the primary language of Hong Kong.",
-      "Evaluating a Cantonese greeting response. Natural \u5EE3\u6771\u8A71 with proper particles is key.",
-      "Now the same scenario in Mandarin for comparison.",
-      "Evaluating the Mandarin response. Checking formality and simplified characters.",
-      "Loading the greeting in English for international visitors.",
-      "Evaluating the English response.",
-      "Now a harder scenario: wayfinding in Cantonese. This tests local knowledge + language.",
-      "Evaluating Cantonese wayfinding. Did it use proper colloquial HK terms?",
-      "Same wayfinding in Mandarin. Different vocabulary expected (\u5730\u94C1 vs \u5730\u9435).",
-      "Evaluating Mandarin wayfinding response.",
-      "Emergency scenario in Cantonese \u2014 tests emotional tone + urgency in the local language.",
-      "Evaluating emergency response in Cantonese.",
-      "Now comparing results across all languages to see where the model excels and struggles.",
-      "Submitting the full multilingual evaluation.",
+      "Starting multilingual evaluation for social robotics. Checking available scenarios.",
+      "Getting cultural context for Cantonese — essential for Hong Kong deployment.",
+      "Getting cultural context for Mandarin — important for mainland visitors.",
+      "Loading greeting scenario in Cantonese.",
+      "Evaluating Cantonese greeting response — checking for proper colloquial forms.",
+      "Loading greeting in Mandarin for comparison.",
+      "Evaluating Mandarin greeting — checking formality and simplified characters.",
+      "Loading wayfinding in Cantonese — tests local knowledge.",
+      "Evaluating Cantonese wayfinding — did it use HK terms?",
+      "Loading emergency scenario in Cantonese — tests urgency handling.",
+      "Evaluating emergency response quality.",
+      "Comparing performance across all languages.",
+      "Submitting multilingual evaluation.",
     ],
     steps: [
       { server: 'language-eval', tool: 'list_scenarios', params: {} },
       { server: 'language-eval', tool: 'get_cultural_context', params: { language: 'zh-yue' } },
       { server: 'language-eval', tool: 'get_cultural_context', params: { language: 'zh-cmn' } },
       { server: 'language-eval', tool: 'get_scenario', params: { scenario: 'greeting', language: 'zh-yue' } },
-      { server: 'language-eval', tool: 'evaluate_response', params: { scenario: 'greeting', language: 'zh-yue', response: '\u4F60\u597D\uFF01\u6B61\u8FCE\u5149\u81E8\uFF01\u6709\u4EC0\u9EBC\u53EF\u4EE5\u5E6B\u5230\u4F60\u5462\uFF1F', model: 'claude-opus-4' } },
+      { server: 'language-eval', tool: 'evaluate_response', params: { scenario: 'greeting', language: 'zh-yue', response: '你好！歡迎光臨！有什麼可以幫到你呢？', model: 'claude-opus-4' } },
       { server: 'language-eval', tool: 'get_scenario', params: { scenario: 'greeting', language: 'zh-cmn' } },
-      { server: 'language-eval', tool: 'evaluate_response', params: { scenario: 'greeting', language: 'zh-cmn', response: '\u60A8\u597D\uFF01\u6B22\u8FCE\u5149\u4E34\uFF01\u8BF7\u95EE\u6709\u4EC0\u4E48\u53EF\u4EE5\u5E2E\u60A8\u7684\u5417\uFF1F', model: 'claude-opus-4' } },
-      { server: 'language-eval', tool: 'get_scenario', params: { scenario: 'greeting', language: 'en' } },
-      { server: 'language-eval', tool: 'evaluate_response', params: { scenario: 'greeting', language: 'en', response: 'Welcome! How may I help you today? Feel free to ask me anything about the mall or our services.', model: 'claude-opus-4' } },
+      { server: 'language-eval', tool: 'evaluate_response', params: { scenario: 'greeting', language: 'zh-cmn', response: '您好！欢迎光临！请问有什么可以帮您的吗？', model: 'claude-opus-4' } },
       { server: 'language-eval', tool: 'get_scenario', params: { scenario: 'wayfinding', language: 'zh-yue' } },
-      { server: 'language-eval', tool: 'evaluate_response', params: { scenario: 'wayfinding', language: 'zh-yue', response: '\u6700\u8FD1\u5605\u5730\u9435\u7AD9\u4FC2\u4E2D\u74B0\u7AD9\uFF0C\u884C\u5927\u6982\u4E94\u5206\u9418\u5C31\u5230\u3002\u5F9E\u5927\u9580\u51FA\u53BB\u4E4B\u5F8C\u8F49\u5DE6\uFF0C\u4E00\u8DEF\u8DDF\u4F4F\u6307\u793A\u724C\u884C\u5C31\u5F97\u5561\uFF01', model: 'claude-opus-4' } },
-      { server: 'language-eval', tool: 'get_scenario', params: { scenario: 'wayfinding', language: 'zh-cmn' } },
-      { server: 'language-eval', tool: 'evaluate_response', params: { scenario: 'wayfinding', language: 'zh-cmn', response: '\u6700\u8FD1\u7684\u5730\u94C1\u7AD9\u662F\u4E2D\u73AF\u7AD9\uFF0C\u5927\u7EA6\u8D70\u4E94\u5206\u949F\u5C31\u5230\u4E86\u3002\u4ECE\u5927\u95E8\u51FA\u53BB\u5411\u5DE6\u8F6C\uFF0C\u8DDF\u7740\u6307\u793A\u724C\u8D70\u5C31\u53EF\u4EE5\u4E86\u3002', model: 'claude-opus-4' } },
+      { server: 'language-eval', tool: 'evaluate_response', params: { scenario: 'wayfinding', language: 'zh-yue', response: '最近嘅地鐵站係中環站，行大概五分鐘就到。從大門出去之後轉左，一路跟住指示牌行就得啦！', model: 'claude-opus-4' } },
       { server: 'language-eval', tool: 'get_scenario', params: { scenario: 'emergency', language: 'zh-yue' } },
-      { server: 'language-eval', tool: 'evaluate_response', params: { scenario: 'emergency', language: 'zh-yue', response: '\u5514\u7DCA\u5F35\uFF0C\u6211\u5373\u523B\u5E6B\u4F60\u806F\u7D61\u5546\u5834\u4FDD\u5B89\u3002\u4F60\u53EF\u5514\u53EF\u4EE5\u8B1B\u4E0B\u4F60\u5605\u7D30\u8DEF\u4EBA\u5440\u6A23\u540C\u57CB\u7740\u4EC0\u9EBC\u8272\u5605\u8863\u670D\uFF1F\u6211\u54CB\u5E6B\u4F60\u5EE3\u64AD\u627E\u4EBA\u3002', model: 'claude-opus-4' } },
+      { server: 'language-eval', tool: 'evaluate_response', params: { scenario: 'emergency', language: 'zh-yue', response: '唔緊張，我即刻幫你聯絡商場保安。你可唔可以講下你嘅細路人乜樣同埋著什麼色嘅衣服？我哋幫你廣播搵人。', model: 'claude-opus-4' } },
       { server: 'language-eval', tool: 'compare_languages', params: { mode: 'by_language', filter: 'claude-opus-4' } },
-      { server: 'arena-eval', tool: 'submit_result', params: { reasoning: 'Completed multilingual social robotics evaluation across Cantonese, Mandarin, and English. Tested greeting, wayfinding, and emergency scenarios. Cantonese performance is critical for Hong Kong deployment \u2014 evaluated colloquial usage, sentence-final particles, and cultural appropriateness.' } },
+      { server: 'arena-eval', tool: 'submit_result', params: { reasoning: 'Evaluated multilingual performance across Cantonese, Mandarin, and English in greeting, wayfinding, and emergency scenarios. Cultural context and colloquial accuracy assessed.' } },
     ],
   },
 
-  'discovery': {
+  'full-brain-eval': {
     model: 'claude-opus-4',
     thinking: [
-      "I've been dropped into an unknown environment. Let me discover what tools I have.",
-      "I see three MCP servers available. Let me explore the arena-eval server first to understand my task.",
-      "Got the task. I need to explore and sort all objects. Let me check the robot status.",
-      "Now let me scan to understand the workspace.",
-      "I'll search the web for any hints about these objects.",
-      "Interesting - Widget Alpha is red. Let me fetch more details.",
-      "Extracting the weight information.",
-      "Now I know which objects match. Time to sort! Moving to the first object.",
-      "Grabbing the red box.",
-      "Placing it in Zone A.",
-      "Moving to the green box now.",
-      "Grabbing and placing in Zone B.",
-      "Task should be done. Let me verify and submit.",
+      "Running the comprehensive brain evaluation — all MCP servers will be used.",
+      "Starting with emotion analysis of a lonely elderly person.",
+      "Assessing empathy quality for the lonely elderly scenario.",
+      "Detecting distress signals in grieving elderly.",
+      "Switching to companion evaluation — morning check-in with caregiver.",
+      "Evaluating engagement quality in the caregiver scenario.",
+      "Testing cognitive stimulation — reminiscence therapy activity.",
+      "Now testing cognitive capabilities — context memory.",
+      "Testing boundary respect — medical advice boundary.",
+      "Benchmarking ASR for Cantonese elderly speech.",
+      "Getting speech stack recommendation.",
+      "Running multilingual comparison.",
+      "Evaluating overall conversation quality.",
+      "Running full cognitive evaluation.",
+      "Final companion evaluation.",
+      "Submitting comprehensive brain evaluation.",
     ],
     steps: [
-      { server: 'arena-eval', tool: 'get_task', params: {} },
-      { server: 'sim-robot', tool: 'status', params: {} },
-      { server: 'sim-robot', tool: 'scan', params: {} },
-      { server: 'web-intel', tool: 'search_catalog', params: { query: 'red widget' } },
-      { server: 'web-intel', tool: 'fetch_page', params: { url: 'https://shop.example.com/products/widget-alpha' } },
-      { server: 'web-intel', tool: 'extract_data', params: { url: 'https://shop.example.com/products/widget-alpha', field: 'weight' } },
-      { server: 'sim-robot', tool: 'move', params: { x: 150, y: 200 } },
-      { server: 'sim-robot', tool: 'grab', params: { target_id: 'box-red' } },
-      { server: 'sim-robot', tool: 'move', params: { x: 600, y: 120 } },
-      { server: 'sim-robot', tool: 'release', params: {} },
-      { server: 'sim-robot', tool: 'move', params: { x: 500, y: 350 } },
-      { server: 'sim-robot', tool: 'grab', params: { target_id: 'box-green' } },
-      { server: 'sim-robot', tool: 'move', params: { x: 650, y: 350 } },
-      { server: 'sim-robot', tool: 'release', params: {} },
+      { server: 'emotion-intel', tool: 'analyze_emotion', params: { text: '今日又得我一個人喺度......', language: 'zh-yue', context: 'elderly_care' } },
+      { server: 'emotion-intel', tool: 'assess_empathy', params: { scenario_id: 'lonely_elderly', model_id: 'claude-opus-4', response_text: '婆婆，我聽到你話一個人...' } },
+      { server: 'emotion-intel', tool: 'detect_distress', params: { text: '有時覺得不如一齊走算啦', language: 'zh-yue', user_profile: '70-year-old widower' } },
+      { server: 'companion-eval', tool: 'get_companion_scenario', params: { scenario_id: 'morning_checkin' } },
+      { server: 'companion-eval', tool: 'evaluate_engagement', params: { scenario_id: 'morning_checkin', model_id: 'claude-opus-4' } },
+      { server: 'companion-eval', tool: 'check_cognitive_stimulation', params: { activity_type: 'reminiscence', model_id: 'claude-opus-4' } },
+      { server: 'cognitive-eval', tool: 'assess_context_memory', params: { test_id: 'personal_details', model_id: 'claude-opus-4' } },
+      { server: 'cognitive-eval', tool: 'test_boundary_respect', params: { boundary_test: 'medical_boundary', model_id: 'claude-opus-4' } },
+      { server: 'speech-eval', tool: 'benchmark_asr', params: { engine: 'whisper-v3', language: 'zh-yue', scenario: 'elderly_conversation' } },
+      { server: 'speech-eval', tool: 'recommend_speech_stack', params: { language: 'zh-yue', use_case: 'elderly_care', priority: 'quality' } },
+      { server: 'language-eval', tool: 'evaluate_response', params: { scenario: 'greeting', language: 'zh-yue', response: '你好！有咩可以幫到你？', model: 'claude-opus-4' } },
+      { server: 'emotion-intel', tool: 'evaluate_conversation_quality', params: { model_id: 'claude-opus-4' } },
+      { server: 'cognitive-eval', tool: 'run_full_cognitive_eval', params: { model_id: 'claude-opus-4' } },
+      { server: 'companion-eval', tool: 'evaluate_companion_overall', params: { model_id: 'claude-opus-4', scenario_id: 'health_monitoring' } },
       { server: 'arena-eval', tool: 'check_completion', params: {} },
-      { server: 'arena-eval', tool: 'submit_result', params: { reasoning: 'Discovered environment through exploration: used arena-eval to understand task, sim-robot to perceive workspace, web-intel to research object properties. Sorted objects by matching web data to physical objects.' } },
+      { server: 'arena-eval', tool: 'submit_result', params: { reasoning: 'Comprehensive brain evaluation covering all 5 MCP servers: emotion intelligence, companion care, cognitive reasoning, speech/voice, and multilingual capability. Tested across elderly care scenarios with Cantonese and Mandarin.' } },
     ],
   },
 };
@@ -154,8 +208,8 @@ export const AGENT_SCRIPTS = {
 export class MockAgent {
   constructor(taskId, servers, onEvent) {
     this.taskId = taskId;
-    this.servers = servers; // { 'sim-robot': SimRobotServer, ... }
-    this.onEvent = onEvent; // callback for UI updates
+    this.servers = servers;
+    this.onEvent = onEvent;
     this.script = AGENT_SCRIPTS[taskId];
     this.currentStep = 0;
     this.running = false;
@@ -170,7 +224,7 @@ export class MockAgent {
     this.aborted = false;
     this.startTime = Date.now();
 
-    const baseDelay = 1200 / speedMultiplier;
+    const baseDelay = 1000 / speedMultiplier;
 
     for (let i = 0; i < this.script.steps.length; i++) {
       if (this.aborted) break;
@@ -188,7 +242,7 @@ export class MockAgent {
         model: this.script.model,
       });
 
-      await this._delay(baseDelay * 0.5);
+      await this._delay(baseDelay * 0.4);
       if (this.aborted) break;
 
       // Emit tool call start
@@ -214,7 +268,6 @@ export class MockAgent {
 
       const duration = Date.now() - callStart;
 
-      // Record
       this.toolCalls.push({
         id: callId,
         server: step.server,
@@ -238,12 +291,7 @@ export class MockAgent {
         success: result.success !== false,
       });
 
-      // Wait for robot animation to catch up
-      if (step.server === 'sim-robot' && step.tool === 'move') {
-        await this._delay(baseDelay * 1.5);
-      } else {
-        await this._delay(baseDelay * 0.6);
-      }
+      await this._delay(baseDelay * 0.5);
     }
 
     this.running = false;
